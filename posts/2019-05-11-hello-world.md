@@ -11,6 +11,7 @@ like format first. I also wanted the essay version to be posted here.
 
 In the future you can expect a few different categories of posts and I'll try to find some way to
 partition them as such:
+
 * Philosophy: musings about how I choose to operate in my day to day life and how I make large 
 decisions. This is probably more for me than any of you, but perhaps others could benefit.
 * Economics/Game Theory: much of this will be related to cryptocurrencies and the economic theory
