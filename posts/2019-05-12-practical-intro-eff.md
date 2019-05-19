@@ -1,5 +1,5 @@
 ---
-title: A Practical Introduction to Freer Monads (using Eff)
+title: A Practical Introduction to Freer Monads (Eff)
 ---
 
 # Background
@@ -23,7 +23,9 @@ Have you ever gotten the requirements of a project, coded it, delivered it to th
 and had them accept it without a fuss the first time around? Yeah, me neither. They always want to 
 tweak something between that v0 and whatever ends up being the stable solution for the time being.
 
-Now, of course, this is fine. We want to satisfy our customers and write software that actually does what people want it to do, but when designing this stuff, there are certain decisions you can make that make your own life difficult if you try to change it later.
+Now, of course, this is fine. We want to satisfy our customers and write software that actually does what people want it
+to do, but when designing this stuff, there are certain decisions you can make that make your own life difficult if you
+try to change it later.
 
 In most cases, when people ask you to make something, there's a very small set of its 
 implementation that they care about and that's usually the original API that they actually 
@@ -318,3 +320,209 @@ list.
 
 ## Problem Statement
 
+So what we want to do is create a server that continuously fetches prices from third parties, 
+aggregates them some way, saves them, and then serves up the result on request.
+
+It might be tempting to say that a web service that does this seems too simple to be useful, 
+however, if any of my colleagues were reading this, they'd tell you it looks awfully similar to a 
+service we have currently running in production.
+
+## Let's write some new effects!
+
+Ok. So immediately what jumps out at me is that since the problem statement was intentionally vague
+about the third parties in question, and the method of saving, those are the candidates for...wait 
+for it..._free-monadification_. 
+
+```
+data AssetPairing = _
+data Price = _
+data Exchange = _
+
+data PriceFeed a where
+    FetchPrice :: Exchange -> AssetPairing -> PriceFeed Price
+makeEffect ''PriceFeed
+
+data PriceStore a where
+    SavePrice :: AssetPairing -> Price -> PriceStore ()
+    GetMostRecentPrice :: AssetPairing -> PriceStore Price
+makeEffect ''PriceStore
+```
+
+## Time to make the PM's happy
+
+With just the code above we're actually ready to write our business logic.
+
+For the damons continuously fetching and saving we have this:
+
+```
+allExchanges :: [Exchange]
+allExchanges = _
+
+getPricesFromAllSources :: Member PriceFeed effs => AssetPairing -> Eff effs [Price]
+getPricesFromAllSources assetPairing = for allExchanges $ \exchange ->
+   fetchPrice exchange assetPairing
+
+aggregatePrices :: [Price] -> Price
+aggregatePrices = _ -- some fold
+
+fetchAndSave :: (Member PriceFeed effs, Member PriceStore effs) => AssetPairing -> Eff effs ()
+fetchAndSave assetPairing = do
+    prices <- getPricesFromAllSources assetPairing
+    let agg = aggregatePrices prices
+    savePrice assetPairing agg
+```
+
+And for our request handler we have this embarrassingly small piece of code here. And since we
+actually want to wire this up to a real Yesod handler, let's go ahead and do just that.
+
+```
+getPriceH :: AssetPairing -> Handler Value
+getPriceH assetPairing = ??? $ fmap toJSON $ getMostRecentPrice assetPairing
+```
+
+The astute reader might notice that we're in the wrong monad here. We need to go from our `Eff`
+defined logic to the actual handler here.
+
+The above code definitely cheats. Freer monads don't save us from having to write all the grimy
+engineering details, but it _does_ save us from having to interleave those details, or even commit
+to them. But when we actually wire into the web application, it's time to make a commitment. After
+all we can't avoid specifying how these prices will get fetched and saved in a real production
+environment.
+
+## Make it work
+
+So what will our interpreters look like?
+
+Well, since we're fetching these prices from external parties, theres pretty much no avoiding
+going straight to IO, possibly with some sort of configuration for an api key.
+
+```
+type (~>) f g = forall a. f a -> g a -- from freer-simple
+
+data ExchangeConf = _
+
+gdaxApiKey :: ExchangeConf -> String
+gdaxApiKey = _
+
+asks :: Member (Reader) r effs => (r -> a) -> Eff effs a
+asks = _ -- from freer-simple
+
+data GDAXResponse = _
+
+gdaxRespToPrice :: GDAXResponse -> Price
+gdaxRespToPrice = _
+
+priceFeedToRIO :: (Member (Reader ExchangeConf) effs, LastMember IO effs) => PriceFeed ~> Eff effs
+priceFeedToRIO action = case action of
+    FetchPrice exchange pairing -> case exchange of
+        GDAX -> do
+            -- GDAX actually doesn't require an api key for their price api, but I'm making this up
+            -- because enough third party services require some sort of auth that this felt like
+            -- it'd be more helpful
+            key <- asks gdaxApiKey
+            initReq <- sendM . parseRequest $ "GET http://api.pro.coinbase.com/products/"
+                <> show pairing
+                <> "/ticker?token="
+                <> key
+            gdaxRespToPrice <$> sendM (httpJson initReq)
+```
+
+## Test it
+
+Great. We now have a way to legitimately fetch prices from a real place. But do we want to hit GDAX
+from our CI pipeline?
+
+```
+type ExchangeTestbed = HashMap (Exchange, AssetPairing) Price
+
+priceFeedToReader :: (Member (Reader ExchangeTestbed) effs) => PriceFeed ~> Eff effs
+priceFeedToReader action = case action of
+    FetchPrice exchange pairing -> do
+        hm <- ask
+        -- It's a test interpreter for a conference talk, I'm cheating totality here
+        let price = fromJust $ lookup (exchange, pairing) 
+        pure price
+```
+
+So now we can test that our business logic saves the right data because we can control what data it
+gets to begin with.
+
+## Interpreters are reusable
+
+What does the PriceStore interpreter look like? Well it depends on how we want to store the data.
+Here we have some choices: an sql database (postgres), redis, live memory, or some combination of
+those.
+
+```
+priceStoreToPostgres :: ( Member (Reader ConnectionPool) effs
+                        , LastMember IO effs
+                        ) => PriceStore ~> Eff effs
+priceStoreToPostgres action = do
+    pool <- ask
+    Persistent.runSqlPool $ case action of
+        SavePrice pairing price -> insert _ -- left as exercise
+        GetMostRecentPrice pairing -> selectFirst _ -- left as exercise
+
+type PriceCache = TVar (HashMap AssetPairing Price)
+priceStoreToPriceCache :: ( Member (Reader PriceCache) effs
+                          , LastMember IO effs
+                          ) => PriceStore ~> Eff effs
+priceStoreToPriceCache action = do
+    cache <- ask
+    case action of
+    SavePrice pairing price ->
+        sendM $ atomically $ do
+            cacheState <- readTVar cache
+            let newCacheState = insert pairing price cacheState
+            writeTVar cache newCacheState
+    GetMostRecentPrice pairing ->
+        sendM $ readTVarIO cache
+
+priceStoreToPGandCache :: ( Member (Reader ConnectionPool) effs
+                          , Member (Reader PriceCache) effs
+                          , LastMember IO effs
+                          ) => PriceStore ~> Eff effs
+priceStoreToPGandCache action = case action of
+    SavePrice _ _ -> do
+        priceStoreToPostgres action
+        priceStoreToPriceCache action
+    GetMostRecentPrice _ ->
+        -- no pg here because we're just reading, gotta go fast
+        priceStoreToPriceCache action 
+```
+
+Wow. So we just wrote two separate effects handlers and wrote a third one in terms of the other 2.
+Hopefully this conveys that something you might encounter in a real world codebase can be turned
+into this style. This is still perhaps a simpler problem than the typical industry grade version,
+but it's still more than a toy and should demonstrate the type of value you would get from doing
+something like this.
+
+# Why shouldn't I use this
+
+Alright alright, is it too good to be true? Not quite. The reasons why you may choose not to use
+this style in a production Haskell codebase are as follows:
+
+* Monadic sections of your code can be slower
+* Resource bracketing can't be expressed this way
+
+But hope is not lost, there is an alternative library that Sandy Maguire just published called
+`polysemy` that pretty much fixes both of these problems. The only reason I didn't write this talk
+with that as the library being studied is because I haven't had a chance to play with it in a
+production codebase yet.
+
+# Conclusion
+
+Freer monads have made my code way more testable, better documented, and much better decomposed
+than it used to be without. I am by no means saying this is the only way for you to accomplish
+these things but it has certainly improved my code quality by quite a margin, and yet it remains
+practical enough for us to deploy real-world services that use this technique to production. If
+you have had a tough time testing IO code or find that you get this sense of fear when you see
+a type signature of `a -> IO b`, maybe give this a shot and see if it solves your problems.
+
+It is also worth noting that this technique can be introduced at the edges of your existing
+services without it infecting everything else, however the ergonomics of it skyrocket when you
+refactor your whole codebase to use this technique. Happy coding.
+
+Until next time.
+
+Peace.
