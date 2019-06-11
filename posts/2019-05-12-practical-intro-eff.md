@@ -13,7 +13,7 @@ unless you have that context, the rest of this post will seem useless, complicat
 
 I could sit here and talk about the theoretical underpinnings that make Free/r monads interesting,
 but there are far more qualified people than I to talk about such things. And while they are
-certainly interesting in their own right, I want to take a step back, forget all about the theory,
+certainly interesting in their own right, I want to take a step back, de-emphasize the theory,
 and revisit something more concrete. And while you may have never exactly encountered the scenarios
 I'm about to lay out, the essence of the frustration should seem eerily familiar.
 
@@ -23,9 +23,9 @@ Have you ever gotten the requirements of a project, coded it, delivered it to th
 and had them accept it without a fuss the first time around? Yeah, me neither. They always want to 
 tweak something between that v0 and whatever ends up being the stable solution for the time being.
 
-Now, of course, this is fine. We want to satisfy our customers and write software that actually does what people want it
-to do, but when designing this stuff, there are certain decisions you can make that make your own life difficult if you
-try to change it later.
+Now, of course, this is fine. We want to satisfy our customers and write software that actually does what people 
+want it to do, but when designing this stuff, there are certain decisions you can make that make your own life 
+difficult if you try to change it later.
 
 In most cases, when people ask you to make something, there's a very small set of its 
 implementation that they care about and that's usually the original API that they actually 
@@ -75,7 +75,7 @@ things than us. Is there a way we can accomplish all the same things?
 
 Let's visit one final frustration before we get to the answer.
 
-## Prove you can't Launch Nukes™
+## Prove you can't _Launch Nukes™_
 
 If you spend even a little bit of time in Haskell you'll start to lean pretty heavily on type
 signatures to get an idea of what a particular piece of code is doing. `Asset -> Price` probably
@@ -88,7 +88,9 @@ programming language, and than Turing Completeness makes it such that anything t
 should be expressible it stands to reason that the type signature of our `main` method is about the
 most useless type signature ever, since _any program at all_ can satisfy it. So what is that type signature?
 
-`IO ()`
+```haskell
+IO ()
+```
 
 Any program at all can inhabit that type. Which means without scrutinizing its contents we have no
 idea what it does. And while `()` is a somewhat worthless return type since it only has one
@@ -121,7 +123,7 @@ Your business logic cares about the "what", but your execution environment is wh
 
 ## Minimum Viable Eff effect
 
-```
+```haskell
 data Console a where -- GADT that defines the types of operations in this API
     GetLine :: Console String
     PutLine :: String -> Console ()
@@ -135,9 +137,12 @@ a `String` and does something with it and gives you back `()`
 But the magic is not in the datatype it's in the following function definitions that are generated
 automatically by the Template Haskell `makeEffect` declaration:
 
-```
+```haskell
 getLine :: Member Console r => Eff r String
+getLine = send GetLine
+
 putLine :: Member Console r => String -> Eff r ()
+putLine = send . PutLine
 ```
 
 What this does is it takes the constructors for that datatype and "injects" them into the `Eff r`
@@ -146,7 +151,7 @@ somewhere. Keep in mind, we haven't said shit about how this thing is supposed t
 anywhere. We've just said, "hey, we want to do get and put to the console, and we'll worry about 
 how to do it some other time". So let's consider the following program
 
-```
+```haskell
 greetBot :: Member Console r => Eff r ()
 greetBot = do
     putLine "What is your name?"
@@ -172,7 +177,7 @@ actually told it how to handle these gets and puts.
 So what are we going to do in the regular program case? The aforementioned functions in base will
 do just fine I think:
 
-```
+```haskell
 consoleToIO :: Console a -> IO a
 consoleToIO action = case action of
     GetLine -> Prelude.getLine
@@ -182,12 +187,12 @@ consoleToIO action = case action of
 And `freer-simple` gives some combinators to be able to take the above action mapping and use it
 in the context of the `Eff` machinery.
 
-```
+```haskell
 translate :: (forall a. f a -> g a) -> Eff (f ': r) b -> Eff (g ': r) b
-translate = ...
+translate = _
 
 runM :: Eff '[m] a -> m a
-runM = ...
+runM = _
 
 -- to close the gap
 interpretConsoleInIO :: Eff '[Console] a -> IO a
@@ -200,7 +205,7 @@ main = interpretConsoleInIO greetBot
 Great! But how do we test it? I promised testing capabilities, I should deliver on it. To really do
 that we need to tweak the original program just a bit so we can just test a single iteration of it.
 
-```
+```haskell
 greetBot :: Member Console r => Eff r ()
 greetBot = greetBot' greetBot' -- alternatively `fix greetBot'`
 
@@ -219,7 +224,7 @@ What is a natural way we might want to test this? Well, the main invariant here 
 emitted over the put should at least contain the name obtained via the get. Let's write out a
 property test for this.
 
-```
+```haskell
 -- hedgehog property test
 prop_nameMatchesGreeting :: Property
 prop_nameMatchesGreeting = property $ do
@@ -233,7 +238,7 @@ the test environment to our program directly. So we want `greetBot'` to _read_ f
 call and _write_ for its `putLine` call. Can we interpret our Console action into more than one
 effect? Turns out yes.
 
-```
+```haskell
 -- freer simple provides some out of the box reader and writer effects that behave the same way
 -- that their identically named monads in `base` behave
 consoleToReaderAndWriter :: ( Member (Reader String) r
@@ -246,22 +251,22 @@ consoleToReaderAndWriter action = case action of
 
 And with the appropriate combinators from `freer-simple` we can interpet this down to a pure value!
 
-```
+```haskell
 -- used to get from Console to Reader AND Writer
 reinterpret2 :: (forall a. f a -> Eff (g ': h ': r) a) -> Eff (f ': r) b -> Eff (g ': h ': r) b
-reinterpret2 = ...
+reinterpret2 = _
 
 -- used to discharge reader
 runReader :: env -> Eff (Reader env ': r) a -> Eff r a
-runReader = ...
+runReader = _
 
 -- used to discharge writer
 runWriter :: Monoid w => Eff (Writer w ': r) a -> Eff r (a, w)
-runWriter = ...
+runWriter = _
 
 -- used to discharge Eff machinery around a pure value
 run :: Eff '[] a -> a
-run = ...
+run = _
 
 -- to close the gap between our mapping and the function we want
 interpretConsoleInReaderWriter :: String -> Eff '[Console] a -> (a, [String])
@@ -274,7 +279,7 @@ interpretConsoleInReaderWriter env =
 
 OK. So now that we've defined our testing interpreter we're ready to complete that property test.
 
-```
+```haskell
 -- hedgehog property test
 prop_nameMatchesGreeting :: Property
 prop_nameMatchesGreeting = property $ do
@@ -333,7 +338,7 @@ Ok. So immediately what jumps out at me is that since the problem statement was 
 about the third parties in question, and the method of saving, those are the candidates for...wait 
 for it..._free-monadification_. 
 
-```
+```haskell
 data AssetPairing = _
 data Price = _
 data Exchange = _
@@ -354,7 +359,7 @@ With just the code above we're actually ready to write our business logic.
 
 For the damons continuously fetching and saving we have this:
 
-```
+```haskell
 allExchanges :: [Exchange]
 allExchanges = _
 
@@ -375,7 +380,7 @@ fetchAndSave assetPairing = do
 And for our request handler we have this embarrassingly small piece of code here. And since we
 actually want to wire this up to a real Yesod handler, let's go ahead and do just that.
 
-```
+```haskell
 getPriceH :: AssetPairing -> Handler Value
 getPriceH assetPairing = ??? $ fmap toJSON $ getMostRecentPrice assetPairing
 ```
@@ -396,33 +401,26 @@ So what will our interpreters look like?
 Well, since we're fetching these prices from external parties, theres pretty much no avoiding
 going straight to IO, possibly with some sort of configuration for an api key.
 
-```
+```haskell
 type (~>) f g = forall a. f a -> g a -- from freer-simple
-
 data ExchangeConf = _
-
 gdaxApiKey :: ExchangeConf -> String
-gdaxApiKey = _
+data GDAXResponse = _
+gdaxRespToPrice :: GDAXResponse -> Price
 
 asks :: Member (Reader) r effs => (r -> a) -> Eff effs a
 asks = _ -- from freer-simple
-
-data GDAXResponse = _
-
-gdaxRespToPrice :: GDAXResponse -> Price
-gdaxRespToPrice = _
 
 priceFeedToRIO :: (Member (Reader ExchangeConf) effs, LastMember IO effs) => PriceFeed ~> Eff effs
 priceFeedToRIO action = case action of
     FetchPrice exchange pairing -> case exchange of
         GDAX -> do
-            -- GDAX actually doesn't require an api key for their price api, but I'm making this up
-            -- because enough third party services require some sort of auth that this felt like
-            -- it'd be more helpful
+            -- GDAX actually doesn't require an api key for their price api, but I'm -- making this up because enough
+            -- third party services require some sort of auth that this felt like it'd be more helpful
             key <- asks gdaxApiKey
             initReq <- sendM . parseRequest $ "GET http://api.pro.coinbase.com/products/"
                 <> show pairing
-                <> "/ticker?token="
+                <> "/ticker?apiKey="
                 <> key
             gdaxRespToPrice <$> sendM (httpJson initReq)
 ```
@@ -432,7 +430,7 @@ priceFeedToRIO action = case action of
 Great. We now have a way to legitimately fetch prices from a real place. But do we want to hit GDAX
 from our CI pipeline?
 
-```
+```haskell
 type ExchangeTestbed = HashMap (Exchange, AssetPairing) Price
 
 priceFeedToReader :: (Member (Reader ExchangeTestbed) effs) => PriceFeed ~> Eff effs
@@ -453,7 +451,7 @@ What does the PriceStore interpreter look like? Well it depends on how we want t
 Here we have some choices: an sql database (postgres), redis, live memory, or some combination of
 those.
 
-```
+```haskell
 priceStoreToPostgres :: ( Member (Reader ConnectionPool) effs
                         , LastMember IO effs
                         ) => PriceStore ~> Eff effs
@@ -491,7 +489,7 @@ priceStoreToPGandCache action = case action of
         priceStoreToPriceCache action 
 ```
 
-Wow. So we just wrote two separate effects handlers and wrote a third one in terms of the other 2.
+Wow. So we just wrote two separate effects handlers and wrote a third one in terms of the other two.
 Hopefully this conveys that something you might encounter in a real world codebase can be turned
 into this style. This is still perhaps a simpler problem than the typical industry grade version,
 but it's still more than a toy and should demonstrate the type of value you would get from doing

@@ -4,7 +4,8 @@ html {
 
 body {
     font-size:2rem;
-    font-family: 'Quicksand', sans-serif;
+    line-height: 2em;
+    font-family: 'Inconsolata', serif;
     color:#030027;
     background-color: #F9F6D6;
     width:100%
@@ -46,12 +47,12 @@ footer {
 
 h1 {
     font-size:4rem;
-    font-family: 'Raleway', sans-serif
+    font-family: 'Open Sans', sans-serif
 }
 
 h2 {
-    font-size:3rem
-    font-family: 'Raleway', sans-serif
+    font-size:3rem;
+    font-family: 'Open Sans', sans-serif
 }
 
 article .header {
@@ -64,6 +65,26 @@ article .header {
     font-weight:bold;
     color:#030027;
     text-decoration:none
+}
+
+code {
+    width: 120ch;
+    line-height: 1em;
+    white-space: nowrap;
+    
+    color: green;
+    font-weight: lighter;
+    padding-left: 4px;
+    padding-right: 4px;
+    margin: 0 auto;
+}
+
+pre code {
+    color: rgb(210, 210, 210);
+    background-color: #282c34;
+    display: block;
+    padding: 8px;
+    margin-bottom: 2em;
 }
 
 @media (max-width:319px) {
@@ -148,7 +169,7 @@ article .header {
     }
 
     main {
-        width: 60%;
+        width: 82%;
         align-content: center;
         margin: auto
     }
