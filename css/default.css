@@ -11,6 +11,10 @@ body {
     width:100%
 }
 
+body p {
+    margin-bottom: 2em;
+}
+
 body a:link {
     color:#3E92CC
 }
@@ -71,7 +75,6 @@ code {
     width: 120ch;
     line-height: 1em;
     white-space: nowrap;
-    
     color: green;
     font-weight: lighter;
     padding-left: 4px;
