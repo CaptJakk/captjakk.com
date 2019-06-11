@@ -14,21 +14,22 @@ unless you have that context, the rest of this post will seem useless, complicat
 I could sit here and talk about the theoretical underpinnings that make Free/r monads interesting,
 but there are far more qualified people than I to talk about such things. And while they are
 certainly interesting in their own right, I want to take a step back, de-emphasize the theory,
-and revisit something more concrete. And while you may have never exactly encountered the scenarios
+and talk about something more concrete. And while you may have never exactly encountered the scenarios
 I'm about to lay out, the essence of the frustration should seem eerily familiar.
 
 ## Requirements Thrash
 
 Have you ever gotten the requirements of a project, coded it, delivered it to the stakeholder(s), 
 and had them accept it without a fuss the first time around? Yeah, me neither. They always want to 
-tweak something between that v0 and whatever ends up being the stable solution for the time being.
+tweak something between that v0 you hand them before arriving at whatever becomes the stable solution
+for the time being
 
 Now, of course, this is fine. We want to satisfy our customers and write software that actually does what people 
 want it to do, but when designing this stuff, there are certain decisions you can make that make your own life 
 difficult if you try to change it later.
 
 In most cases, when people ask you to make something, there's a very small set of its 
-implementation that they care about and that's usually the original API that they actually 
+implementation that they care about, and that's usually the original API that they actually 
 specify. Technical debates about whether you should store the data in Postgres or on the 
 Filesystem, or debates about whether caching is done in memory or in Redis, are things _you_ get 
 to decide. _Your PM's don't give a shit._
@@ -36,7 +37,7 @@ to decide. _Your PM's don't give a shit._
 So given that you're building software for them in the first place, why would you spend any time on
 the implementation details before getting the high level semantics down right?
 
-Of course that stuff still has to get done before you can actually ship the code but a demo is
+Of course, that stuff still has to get done before you can actually ship the code, but a demo is
 worth a thousand requirements meetings. People realistically don't know what they want until they
 see it, so can we somehow show them a version of what the system will look like before we get to
 all the grimy engineering details of making it fault tolerant, performant, etc.?
@@ -48,14 +49,14 @@ Before we answer that, let's take a look at another situation.
 ## Testing
 
 Testing is an interesting subject to talk about in Haskell because with such a sophisticated type
-system we often find that when our software compiles it will just work. Now this isn't technically
+system we often find that when our software compiles it will "just work". Now this isn't technically
 true because any monomorphic function `Foo -> Bar -> Baz` can have many different implementations
-that satisfy that type signature, and almost certainly at least one of them is wrong.
+that satisfy that type signature, and almost certainly, at least one of them is wrong.
 
 So while there are entire categories of tests we don't have to write that people writing Ruby or JS
-have to, the number of tests we still have to write is still nonzero. Now, for pure functions we 
-have some pretty world-class tooling such as `quickcheck` and `hedgehog` which I've been favoring 
-more recently, but these things are primarily focused on testing _data transformations_.
+have to, the number of tests we have to write is still nonzero. Now, for pure functions we have some
+pretty world-class tooling such as `quickcheck` and `hedgehog` which I've been favoring more recently,
+but these things are primarily focused on testing _data transformations_.
 
 However, sometimes we want to be able to write a test that ensures that _actions_ produce other
 actions that may not have a representation in the return type of your function. After all, how
@@ -83,19 +84,21 @@ gives you the price of that asset, which is loads better than a comparable signa
 `String -> Double`. Not only because it constrains the input and output types, but also makes a
 good faith effort to describe what the function is doing in a very "TL;DR" manner.
 
-So what is the least descriptive type signature ever? Well, given that Haskell is a general purpose
-programming language, and than Turing Completeness makes it such that anything that is computable
-should be expressible it stands to reason that the type signature of our `main` method is about the
-most useless type signature ever, since _any program at all_ can satisfy it. So what is that type signature?
+So what is the least descriptive type signature ever?
+
+Well, given that Haskell is a general purpose programming language, and than Turing Completeness
+makes it such that anything that is computable should be expressible, it stands to reason that the
+type signature of our `main` method is about the most useless type signature ever, since
+_any program at all_ can satisfy it. So what is that type signature?
 
 ```haskell
 IO ()
 ```
 
-Any program at all can inhabit that type. Which means without scrutinizing its contents we have no
+Any program at all can inhabit that type. This means without scrutinizing its contents we have no
 idea what it does. And while `()` is a somewhat worthless return type since it only has one
 inhabitant, it's not the scariest part of this type signature. The structurally similar
-`Identity ()` is a lot clearer about what it can or more importantly _can't_ do.
+`Identity ()` is a lot clearer about what it can, or more importantly _can't_, do.
 
 So why is `IO` so scary? Because it's more or less like giving root to someone. Once given control,
 it can do whatever it wants before giving control back to the caller.
@@ -114,9 +117,9 @@ Enter Eff.
 
 Eff is a structure with some beautiful theoretical underpinnings that allows us to deal with the
 above phenomena in a tractable and scalable way. It's main value proposition is bisecting your
-effectful code into a "what" and a "how". Along with a method of choosing the "how" at a different
+effectful code into a "what" and a "how", along with a method of choosing the "how" at a different
 call site than the what. There are numerous implementations of this idea, and the one that we'll be
-referencing throughout the rest of this post is [freer-simple]().
+referencing throughout the rest of this post is [freer-simple](https://hackage.haskell.org/package/freer-simple).
 
 Your business logic cares about the "what", but your execution environment is what cares about the
 "how".
@@ -145,9 +148,16 @@ putLine :: Member Console r => String -> Eff r ()
 putLine = send . PutLine
 ```
 
+What is happening here is that `r` is a _type-level list_ of effects, and the `Member` constraint
+is saying that `Console` must appear in that list somewhere. Finally, `send` is merely allowing us
+to use these effects together with each other in a "mix and match" fashion, without having to worry
+about the machinery that keeps all of this type-safe.
+
 What this does is it takes the constructors for that datatype and "injects" them into the `Eff r`
 monad that is completely polymorphic in r with a constraint that the Console effect is in there
-somewhere. Keep in mind, we haven't said shit about how this thing is supposed to get or put lines
+somewhere.
+
+Keep in mind, we haven't said shit about how this thing is supposed to get or put lines
 anywhere. We've just said, "hey, we want to do get and put to the console, and we'll worry about 
 how to do it some other time". So let's consider the following program
 
@@ -181,11 +191,24 @@ do just fine I think:
 consoleToIO :: Console a -> IO a
 consoleToIO action = case action of
     GetLine -> Prelude.getLine
-    putLine s -> Prelude.putStr s
+    PutLine s -> Prelude.putStrLn s
 ```
 
-And `freer-simple` gives some combinators to be able to take the above action mapping and use it
-in the context of the `Eff` machinery.
+This is all great, but `greetBot` isn't actually a program of type `Console a`. Instead, it is one
+that that has the type `Eff r a` where the only requirement on `r` is that it is a list that contains
+`Console` in it somewhere. The minimum concretion of `greetBot` could have type `Eff '[Console] ()`, but
+the point here is that it is not _limited_ to that, and can be combined at will with other effects, that,
+in conjunction, build up a much larger list.
+
+Once this list is built, though, we need a way to independently interpret these effects. We also need to
+do this in such a way that we can define the handler with no knowledge of anything besides the source and
+target effects. We want this so that our effects can remain isolated from one another but can be composed
+together to interpret more complicated programs.
+
+This is where the value of effect libraries such as `freer-simple` start to shine.
+
+`freer-simple` gives us some functions to be able to take the above action mapping and use it in the
+context of the `Eff` machinery.
 
 ```haskell
 translate :: (forall a. f a -> g a) -> Eff (f ': r) b -> Eff (g ': r) b
@@ -207,14 +230,14 @@ that we need to tweak the original program just a bit so we can just test a sing
 
 ```haskell
 greetBot :: Member Console r => Eff r ()
-greetBot = greetBot' greetBot' -- alternatively `fix greetBot'`
+greetBot = fix greetBot'
 
 greetBot' :: Member Console r => Eff r () -> Eff r ()
-greetBot' rec = do
+greetBot' continue = do
     putLine "What is your name?"
     name <- getLine
     putLine $ "Hello, " <> name <> "!\n"
-    rec
+    continue
 ```
 
 We have to do this because if we try to test a program that loops forever the test will never
@@ -249,7 +272,7 @@ consoleToReaderAndWriter action = case action of
     PutLine s -> tell s
 ```
 
-And with the appropriate combinators from `freer-simple` we can interpet this down to a pure value!
+And with the appropriate functions from `freer-simple` we can interpet this down to a pure value!
 
 ```haskell
 -- used to get from Console to Reader AND Writer
@@ -357,7 +380,7 @@ makeEffect ''PriceStore
 
 With just the code above we're actually ready to write our business logic.
 
-For the damons continuously fetching and saving we have this:
+For the daemons continuously fetching and saving we have this:
 
 ```haskell
 allExchanges :: [Exchange]
@@ -497,16 +520,16 @@ something like this.
 
 # Why shouldn't I use this
 
-Alright alright, is it too good to be true? Not quite. The reasons why you may choose not to use
+Alright alright, is it too good to be true? Just barely. The reasons why you may choose not to use
 this style in a production Haskell codebase are as follows:
 
 * Monadic sections of your code can be slower
 * Resource bracketing can't be expressed this way
 
-But hope is not lost, there is an alternative library that Sandy Maguire just published called
-`polysemy` that pretty much fixes both of these problems. The only reason I didn't write this talk
-with that as the library being studied is because I haven't had a chance to play with it in a
-production codebase yet.
+But hope is not lost, there is an alternative library that [Sandy Maguire](https://reasonablypolymorphic.com/)
+just published called [polysemy](https://hackage.haskell.org/package/polysemy) that pretty much
+fixes both of these problems. The only reason I didn't write this post with that as the library
+being studied is because I haven't had a chance to play with it in a production codebase yet.
 
 # Conclusion
 
