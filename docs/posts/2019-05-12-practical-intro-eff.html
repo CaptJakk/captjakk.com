@@ -248,7 +248,7 @@
 <a class="sourceLine" id="cb16-5" title="5">    <span class="dt">FetchPrice</span> exchange pairing <span class="ot">-&gt;</span> <span class="kw">do</span></a>
 <a class="sourceLine" id="cb16-6" title="6">        hm <span class="ot">&lt;-</span> ask</a>
 <a class="sourceLine" id="cb16-7" title="7">        <span class="co">-- It's a test interpreter for a conference talk, I'm cheating totality here</span></a>
-<a class="sourceLine" id="cb16-8" title="8">        <span class="kw">let</span> price <span class="ot">=</span> fromJust <span class="op">$</span> <span class="fu">lookup</span> (exchange, pairing) </a>
+<a class="sourceLine" id="cb16-8" title="8">        <span class="kw">let</span> price <span class="ot">=</span> fromJust <span class="op">$</span> <span class="fu">lookup</span> (exchange, pairing) hm</a>
 <a class="sourceLine" id="cb16-9" title="9">        <span class="fu">pure</span> price</a></code></pre></div>
 <p>So now we can test that our business logic saves the right data because we can control what data it gets to begin with.</p>
 <h2 id="interpreters-are-reusable">Interpreters are reusable</h2>

@@ -461,7 +461,7 @@ priceFeedToReader action = case action of
     FetchPrice exchange pairing -> do
         hm <- ask
         -- It's a test interpreter for a conference talk, I'm cheating totality here
-        let price = fromJust $ lookup (exchange, pairing) 
+        let price = fromJust $ lookup (exchange, pairing) hm
         pure price
 ```
 
