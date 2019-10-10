@@ -2,60 +2,35 @@
 title: Bitcoin and the Rise of Sovereign Apps
 ---
 
-Today I want to talk about how Bitcoin, in the coming years, can be used as more than just a currency. I have
-recently started thinking about the Bitcoin network as a post-national court of disputes. I think this analogy
+Recently, I have found it interesting to think about the Bitcoin as a court of disputes. I think this analogy
 is helpful when trying to understand what can be done with Bitcoin, and the role the blockchain itself actually
 plays in the future of Bitcoin.
 
 # Languages and Contracts
 
 It is a misconception that Bitcoin is not capable of smart contracts. This misunderstanding is primarily the result
-of Ethereum's marketing as well as a very real criticism of the expressivity of Bitcoin's smart contract language.
-Bitcoin's smart contracting language is very primitive today, and rather than deploying contracts as "agents" as
-Ethereum treats them, Bitcoin's contracts are more like lockboxes with riddles that when answered correctly, the
-coins may be moved. The difference between these models is that in Ethereum, contracts are used to execute specific
-state transitions, whereas in Bitcoin contracts are used to block specific state transitions. Anyone who has ever
-used Bitcoin has already experienced sending money to contracts. In fact, Bitcoin addresses basically encode two
-standard contracts that are used: P2PKH, and P2SH
+of Ethereum's marketing as well as a very real criticism of the limited expressivity of Bitcoin Script. Rather than deploying contracts as "agents" (like in Ethereum), Bitcoin's contracts are more like lockboxes with riddles. Answer the riddle correctly, and the coins may be moved. The difference between these two models is that in Ethereum, contracts are used to *execute* specific state transitions; whereas in Bitcoin, contracts are used to *block* specific state transitions. Anyone who has ever used Bitcoin has already experienced sending money to contracts. In fact, Bitcoin addresses are just encodings of Bitcoin's two primary types of contracts: P2PKH and P2SH.
 
-But there is merit to the criticism that Bitcoin's Script language is too limited. Today, when you write a Bitcoin
-script, you may only ask for a few specific things: a delay effect (CLTV, CSV), a signature check (CheckSig/Verify,
-CheckMultiSig/Verify), Hash Preimages (SHA256, RipeMD160), and some basic arithmetic operations (although
-interestingly enough, not all of them). These are highly specific, and notably exclude asking for any information
-about the outputs. In many cases this is fine, but if you enable output inspection, you get the ability to enforce
-what we call "linearity" to your contract. Why is linearity important? Linearity gives us the ability to build
-Finite State Machines whose transition rules are enforceable and verifiable. The state is carried in the UTXO set
-and the state transition rules are encoded into the riddles on the output(s).
+Today, Bitcoin scripts can only ask for a few things: a delay effect (CLTV, CSV), a signature check (CheckSig/Verify, CheckMultiSig/Verify), Hash Preimages (SHA256, RipeMD160), and basic arithmetic operations (ecept for division). These are highly specific, and most notably exclude asking for any information about the outputs. In many cases this is fine, but if you enable output inspection, you get the ability to enforce "linearity" to your contract. Why is linearity important? Linearity gives us the ability to build Finite State Machines whose transition rules are enforceable and verifiable. The state is carried in the UTXO set, and the state transition rules are encoded into the locking script of the output(s)
 
-Why does this matter? It would allow things like escrows, many financial instruments, collateralized debt
-instruments, credit reports/credit histories, all of which are important and beneficial to a robust Bitcoin
-economy. Some Bitcoiners will try to deny the importance of these things, saying "Bitcoin doesn't need that", and
-that may be true, it is entirely possible for Bitcoin to succeed without any of the bells and whistles. But I want
-to change the attitude around that from "Does Bitcoin need it?" to "Is Bitcoin better with it?". I certainly agree
-that sacrificing Bitcoin's security is not acceptable as a price to pay for increasing its functionality, but we
-can absolutely add certain programming capabilities without these sacrifices.
+So why are finite state machines important? They allow things like escrows, collateralized debt, credit reports/credit histories, and other financial instruments - all of which are important and beneficial to a robust Bitcoin economy. Some Bitcoiners will try to deny the importance of these things, saying "Bitcoin doesn't need that", and that may be true. While it is entirely possible for Bitcoin to succeed without any of the bells and whistles, I want to change the attitude from "Does Bitcoin need it?" to "Is Bitcoin better with it?". I certainly agree that sacrificing Bitcoin's security is not acceptable as a price to pay for increasing its functionality, but we can absolutely add certain programming capabilities without these sacrifices.
 
-So in order to give Bitcoin what it needs to be able to do arbitrarily powerful smart contracts is to have a
+So in order to give Bitcoin what it needs to be able to do arbitrarily powerful smart contracts, we need a
 general way to talk about all parts of the transaction itself and to specify conditions on the relationships
 between them. How general do we need? And how general is too general? It is the opinion of most Bitcoiners (myself
 included) that Turing Complete is too general. Due to the halting problem, you cannot tell if a Turing Complete
 program will ever terminate, nor bound how long it will take to compute. This opens you up to denial of service
 attacks, and those cannot be mitigated without introducing a gas model like Ethereum. Ethereum's gas model also
-has a reasonably terrible UX around it in my opinion, so that doesn't seem like the direction we'd want to go even
+has a reasonably terrible UX around it, so that doesn't seem like the direction we'd want to go even
 if we could. But the good news here is that we don't even need Turing Completeness to get a ton of useful
-applications, and if we go with the slightly less powerful Finitary Completeness, we enable a huge number of
+applications, and by going with the slightly less powerful Finitary Completeness, we enable a huge number of
 applications as well as retain the ability to statically analyze programs and bound their resource costs without a
 gas model.
 
 # Simplicity
 
 This is where Simplicity comes in. Simplicity is a new programming "language" for Bitcoin. Calling it a language
-is a bit generous as it is a tiny, tiny language. Tiny is good from the perspective of security and verifiability,
-however, it does mean that it is so much more low level than anyone in the modern day would like to program by
-hand. But a language it is, nonetheless. This language is finitarily complete, and has access as primitives to
-all of the components of a Bitcoin transaction, including output inspection. As far as I know, it's the only
-project that offers to give comprehensive access to the values of the transaction as well as a general way to
-ensure that various conditions hold about those values.
+is a bit generous as it is a tiny, tiny language, and tiny is good from the perspective of security and verifiability. It does, however, mean that it is so much more low level than anyone in the modern day would like to program by hand. But a language it is, nonetheless. This language is finitarily complete, and has access as primitives to all of the components of a Bitcoin transaction, including output inspection. As far as I know, it's the only project that offers to give comprehensive access to the values of the transaction as well as a general way to ensure that various conditions hold about those values.
 
 But how do you change Bitcoin's programming language? Doesn't that change consensus? In the 2017 UASF, 3 really
 important things happened to Bitcoin: #1 we fixed transaction malleability (the importance of this is well
@@ -63,10 +38,7 @@ documented and beyond the scope of this article), #2 is we separated soundness a
 witness (proof) validation (the namesake of the proposal: Segregated Witness), and the least commony talked about
 #3, we added a script versioning system that allows new script types to be added via soft fork. This is perhaps
 the least talked about effect of the SegWit changes, and is ultimately how the Taproot and Tapscript proposals
-will get put into Bitcoin when we get around to that. It is also the method I would expect Simplicity to be added
-to mainnet on Bitcoin. That said, grassroots support for adding Simplicity to Bitcoin is relatively small, which
-is part of the motivation for this post, so it may take a while to get the social consensus needed for it to go
-through.
+will get put into Bitcoin. It is also the method I would expect Simplicity to be added. That said, grassroots support for adding Simplicity to Bitcoin is relatively small, which is part of the motivation for this post, so it may take a while to get the social consensus needed for it to go through.
 
 Without diving too deep into why this is (although if you are interested, I recommend reading the source material),
 the drawback of something like simplicity is that it can be very expensive to move simplicity transactions. As an
@@ -84,9 +56,9 @@ number of other aspects we care about in Bitcoin, not the least of which is scal
 
 There are two ways by which you can enhance privacy: Omission, and Obfuscation. Omission is about leaving as much
 data out of the consensus checks as possible, and Obfuscation is about trying to submit extra data to the consensus
-checks that hides which piece of data is actually the important part. The neat thing about omission is that it is
-also a win for scaleability. Any data you can leave out and still preserve the integrity of your transaction is
-blockspace that is saved. The key observation about Taproot is that the only reason any complicated smart contract
+checks that hides which piece of data is actually the important part. The neat thing about omission is that it also
+affords scaleability. Any data you can leave out and still preserve the integrity of your transaction is
+blockspace saved. The key observation about Taproot is that the only reason any complicated smart contract
 needs to be executed is because the people who are party to that contract are in dispute in some manner, and that
 as long as they can cooperate, there is no reason the blockchain should have to settle the particulars of every
 private arrangement. For this reason, taproot organizes every spend as being one of two flavors: either the
@@ -137,7 +109,7 @@ applications to the aforementioned infrastructure, you enable what I have lately
 
 # Sovereign Apps
 
-What are Sovereign Apps? I generally think of these as any software that cannot be detected and stopped at scale.
+What are Sovereign Apps? I generally think of these as any software that cannot be stopped at scale.
 The first sovereign app that we ever had was email. It eventually got centralized by the vastly superior UX of
 online services, but email was designed to be run in a distributed fashion. Another example is BitTorrent. And most
 recently, Bitcoin. Between the immutability afforded to us by blockchains, and the censorship resistance properties
