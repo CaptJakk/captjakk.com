@@ -7,7 +7,7 @@ recently started thinking about the Bitcoin network as a post-national court of 
 is helpful when trying to understand what can be done with Bitcoin, and the role the blockchain itself actually
 plays in the future of Bitcoin.
 
-# Languages and Contracts
+## Languages and Contracts
 
 It is a misconception that Bitcoin is not capable of smart contracts. This misunderstanding is primarily the result
 of Ethereum's marketing as well as a very real criticism of the expressivity of Bitcoin's smart contract language.
@@ -47,7 +47,7 @@ applications, and if we go with the slightly less powerful Finitary Completeness
 applications as well as retain the ability to statically analyze programs and bound their resource costs without a
 gas model.
 
-# Simplicity
+## Simplicity
 
 This is where Simplicity comes in. Simplicity is a new programming "language" for Bitcoin. Calling it a language
 is a bit generous as it is a tiny, tiny language. Tiny is good from the perspective of security and verifiability,
@@ -76,7 +76,7 @@ witness data for the average transaction is 70-ish bytes. So this is about 200x 
 transaction, but there are known ways to compress this substantially. But it gets better, because what if there was
 a way to bypass having to submit the witness data altogether.
 
-# Taproot
+## Taproot
 
 Earlier I mentioned Taproot. Taproot is probably the most important proposal happening in Bitcoin right now, and it
 is primarily sold as a large improvement to privacy, but the way by which it goes about this massively improves a
@@ -94,7 +94,7 @@ parties cooperate and you combine your signatures to spend the coins, or you dis
 to settle the dispute. Finally, with Schnorr Signatures every multisig spend is indistinguisable from a single-sig
 spend, masking all cooperative private contracts and making them look like individual transactions.
 
-# My Lawyer is Advising Me to Settle
+## My Lawyer is Advising Me to Settle
 
 I want to briefly revisit my court system analogy. I'm from the US, and here were have reasonably strong rule of
 law, and a court system that, by and large, people trust and respect. However, the court system doesn't have the
@@ -117,7 +117,7 @@ number of cases that can be heard, but if people weren't taking to each other to
 scale the complexity of our interactions with little to no realized cost. Additionally, we can keep private
 interactions private in the cryptographic sense as well.
 
-# You'll have to talk to my Agent
+## You'll have to talk to my Agent
 
 Cooperation comes at a slightly different cost, though. It requires any parties who are dealing with each other in
 the above manner, to be running infrastructure that acts as their agent. People have used this as a criticism of
@@ -135,7 +135,7 @@ from a UX perspective.
 By packaging up these pieces of software in such a way that the average user can download and install new
 applications to the aforementioned infrastructure, you enable what I have lately been calling "sovereign apps".
 
-# Sovereign Apps
+## Sovereign Apps
 
 What are Sovereign Apps? I generally think of these as any software that cannot be detected and stopped at scale.
 The first sovereign app that we ever had was email. It eventually got centralized by the vastly superior UX of
