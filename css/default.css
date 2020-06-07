@@ -1,24 +1,32 @@
 html {
     font-size:62.5%;
     height: 100%;
-    clear: both;
+    width: 100%;
 }
 
 body {
+    margin: 0;
     font-size:2rem;
     line-height: 2em;
     font-family: 'Inconsolata', serif;
-    color: #BEC0CD;
+    color: #543864;
     width:100%;
     height: 100%;
-    background: linear-gradient(135deg, #111, #0E0026);
-    background-size: cover;
+    /* background: linear-gradient(0deg, #543864, #202040); */
+    /* background: #FCEAC5; */
+    background: #202040;
     background-repeat: no-repeat;
     background-attachment: fixed;
 }
 
 main {
-    min-height: 75%;
+    background: #FCEAC5;
+    min-height: 90%;
+    margin: auto;
+    padding-top: 2em;
+    padding-left: 4em;
+    padding-right: 4em;
+    width: 80%;
 }
 
 body p {
@@ -28,29 +36,40 @@ body p {
     margin-bottom: 2em;
 }
 
-body a:link {
-    color:#5A189A;
+main a:link {
+    color:#FF6363;
+}
+
+main a:visited {
+    color: #FFBD69;
 }
 
 header {
-    border-bottom:0.2rem solid #5A189A;
+    display: flex;
+    padding-top: 1em;
+    padding-bottom: 1em;
+    align-items: center;
+    background: linear-gradient(90deg,#FFBD69, #FF6363);
     font-family: 'Raleway', sans-serif;
-    width: 100%
+    width: 100%;
 }
 
 nav {
-    text-align:right
+    text-align:right;
+    flex: 50%;
 }
 
 nav a {
+    padding-right: 2em;
     font-size:1.2rem;
     font-weight:bold;
-    color:030027;
+    color:#543864;
     text-decoration:none;
     text-transform:uppercase
 }
 
 footer {
+    display: flex;
     height: 3rem;
     bottom: 0;
     width: 100%;
@@ -63,12 +82,12 @@ footer {
 
 h1 {
     font-size:4rem;
-    font-family: 'Oxanium', cursive;
+    font-family: 'Oxanium';
 }
 
 h2 {
     font-size:3.5rem;
-    font-family: 'Rajdhani', sans-serif
+    font-family: 'Rajdhani', sans-serif;
 }
 
 article .header {
@@ -77,16 +96,25 @@ article .header {
     color:#555
 }
 
+.logo {
+    flex: 50%;
+}
+
 .logo a {
     font-family: 'Oxanium', cursive;
+    padding-left: 1em;
     font-weight:bold;
-    color:#BEC0CD;
+    color:#543864;
     text-decoration:none
 }
 
-.logo a .keags {
-    color: #5A189A
+.logo a .proof {
+    color: #543864;
 }
+.logo a .keags {
+    color: #FF6363
+}
+
 
 code {
     width: 120ch;
@@ -107,114 +135,8 @@ pre code {
     margin-bottom: 2em;
 }
 
-@media (max-width:319px) {
-    body {
-        width:90%;
-        margin:0;
-        padding:0 5%
-    }
-    
-    header {
-        margin:4.2rem 0
-    }
-    
-    nav{
-        margin:0 auto 3rem;
-        text-align:center
-    }
-    
-    footer {
-        text-align:center
-    }
-    
-    .logo {
-        text-align:center;
-        margin:1rem auto 3rem
-    }
-    
-    .logo a {
-        font-size:2.4rem
-    }
-    
-    nav a{
-        display:block;
-        line-height:1.6
-    }
-}
-
-@media (min-width:320px) {
-    body{
-        width:90%;
-        margin:0;padding:0 5%
-    }
-    
-    header {
-        margin:4.2rem 0
-    }
-    
-    nav {
-        margin:0 auto 3rem;
-        text-align:center
-    }
-    
-    footer {
-        text-align:center
-    }
-    
-    .logo {
-        text-align:center;
-        margin:1rem auto 3rem
-    }
-    
-    .logo a {
-        font-size:2.4rem
-    }
-
-    nav a {
-        display:inline;
-        margin:0 0.6rem
-    }
-}
-
-@media (min-width:640px) {
-    body {
-        width:90%;
-        margin:0 auto;
-        padding:0
-    }
-    
-    header {
-        margin:0 0 4rem;
-        padding:1.2rem 0
-    }
-
+@media(min-width: 1000px) {
     main {
-        width: 82%;
-        align-content: center;
-        margin: auto;
-    }
-    
-    nav {
-        margin:0;
-        text-align:right
-    }
-    
-    nav a {
-        margin:0 0 0 1.2rem;
-        display:inline
-    }
-    
-    footer {
-        text-align:right;
-    }
-    
-    .logo {
-        margin:0;
-        text-align:left
-    }
-    
-    .logo a {
-        float:left;
-        font-size:1.8rem
+        width: 40em;
     }
 }
