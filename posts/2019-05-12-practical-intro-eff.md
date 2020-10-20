@@ -92,7 +92,7 @@ type signature of our `main` method is about the most useless type signature eve
 _any program at all_ can satisfy it. So what is that type signature?
 
 ```haskell
-IO ()
+main :: IO ()
 ```
 
 Any program at all can inhabit that type. This means without scrutinizing its contents we have no

@@ -9,23 +9,25 @@ body {
     font-size:2rem;
     line-height: 2em;
     font-family: 'Inconsolata', serif;
-    color: #543864;
+    color: #4d335b;
     width:100%;
     height: 100%;
+    font-weight: 300;
     /* background: linear-gradient(0deg, #543864, #202040); */
     /* background: #FCEAC5; */
-    background: #202040;
+    background: #220022;
     background-repeat: no-repeat;
     background-attachment: fixed;
 }
 
 main {
-    background: #FCEAC5;
+    background: #fdf1d8;
     min-height: 90%;
     margin: auto;
     padding-top: 2em;
     padding-left: 4em;
     padding-right: 4em;
+    padding-bottom: 2em;
     width: 80%;
 }
 
@@ -49,7 +51,7 @@ header {
     padding-top: 1em;
     padding-bottom: 1em;
     align-items: center;
-    background: linear-gradient(90deg,#FFBD69, #FF6363);
+    background: linear-gradient(90deg,#ffbe69, #FF6363);
     font-family: 'Raleway', sans-serif;
     width: 100%;
 }
@@ -73,7 +75,6 @@ footer {
     height: 3rem;
     bottom: 0;
     width: 100%;
-    margin-top:3rem;
     padding:1.2rem 0;
     border-top:0.2rem solid #5A189A;
     font-size:1.2rem;
@@ -120,7 +121,7 @@ code {
     width: 120ch;
     line-height: 1em;
     white-space: nowrap;
-    color: green;
+    color: #2e86ab;
     font-weight: lighter;
     padding-left: 4px;
     padding-right: 4px;
@@ -131,12 +132,12 @@ pre code {
     color: rgb(210, 210, 210);
     background-color: #282c34;
     display: block;
-    padding: 8px;
+    padding: 2em;
     margin-bottom: 2em;
 }
 
 @media(min-width: 1000px) {
     main {
-        width: 40em;
+        width: 62em;
     }
 }
